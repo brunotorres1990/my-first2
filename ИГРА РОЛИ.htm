@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, touch-action=manipulation">
+  <title>Поле Чудес · Белбин · Командные роли</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;user-select:none}
+    body{min-height:100vh;font-family:'Segoe UI',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;background:#030711;color:#e6f0ff;overflow-x:hidden;background-image:radial-gradient(ellipse at 20% 30%,#142440 0%,transparent 55%),radial-gradient(ellipse at 80% 70%,#0b1a2f 0%,transparent 55%),radial-gradient(ellipse at 50% 0%,#1f314c 0%,transparent 60%)}
+    .game-container{max-width:1500px;width:100%;position:relative;z-index:2;display:flex;flex-direction:column;align-items:center}
+    .main-flex{display:flex;flex-wrap:wrap;gap:38px;justify-content:center;align-items:flex-start;margin-bottom:28px;width:100%}
+    .wheel-area{flex:2.3;display:flex;flex-direction:column;align-items:center;gap:12px;min-width:560px;max-width:700px}
+    .wheel-wrapper{position:relative;width:100%;aspect-ratio:1;max-width:700px;cursor:pointer;filter:drop-shadow(0 0 28px rgba(70,150,240,0.65))}
+    #wheelRotator{width:100%;height:100%;border-radius:50%;will-change:transform}
+    canvas{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 30% 30%,#14243a,#060f1c);box-shadow:0 0 0 7px rgba(70,140,210,0.55),0 0 0 16px rgba(30,70,120,0.45),0 24px 48px rgba(0,0,0,0.8);display:block}
+    .pointer{position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:24px;height:80px;background:linear-gradient(180deg,#F5F5F5 0%,#C0C0C0 30%,#909090 70%,#606060 100%);clip-path:polygon(15% 0%,85% 0%,100% 30%,60% 100%,40% 100%,0% 30%);box-shadow:0 6px 15px rgba(0,0,0,0.6),inset 0 3px 6px rgba(255,255,255,0.7);z-index:15;border-radius:3px 3px 2px 2px}
+    .word-panel{flex:1;background:rgba(9,18,33,0.6);backdrop-filter:blur(14px);border-radius:55px;padding:24px 22px;border:1px solid rgba(90,160,235,0.3);box-shadow:0 15px 30px rgba(0,0,0,0.4);max-width:500px}
+    .word-title{font-size:1.3rem;font-weight:600;text-align:center;color:#ffefb2;background:rgba(22,45,75,0.65);border-radius:40px;padding:10px;margin-bottom:22px}
+    .letter-grid{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-bottom:22px;min-height:80px;align-items:center}
+    .tile{width:56px;height:68px;background:rgba(18,34,56,0.8);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:bold;font-family:'Courier New',monospace;text-transform:uppercase;box-shadow:inset 0 -2px 0 #4f7ca0,0 6px 14px rgba(0,0,0,0.3);color:#ffecb3}
+    .tile.rev{background:#234b6e;color:#ffe08c;animation:pop 0.4s ease}
+    .tile.hid{background:#0c1b2c;color:transparent}
+    .tile.hid::after{content:"?";font-size:1.6rem;color:#6688aa}
+    .tile.spc{background:transparent;width:20px;box-shadow:none}
+    @keyframes pop{0%{transform:scale(0.7);opacity:0}100%{transform:scale(1);opacity:1}}
+    .guess-area{display:flex;gap:10px;background:rgba(12,26,46,0.9);border-radius:70px;padding:5px 12px;border:1px solid rgba(110,180,240,0.45);flex-wrap:wrap}
+    .guess-area input{flex:1;padding:14px 10px;border-radius:50px;border:none;background:#0b1a2b;font-size:1.1rem;text-align:center;text-transform:uppercase;font-weight:600;outline:none;color:#dcf0ff;box-shadow:inset 0 2px 5px rgba(0,0,0,0.6),0 0 0 1px #2d5980;min-width:100px}
+    .guess-area input:focus{box-shadow:0 0 0 2px #4a9eff,inset 0 2px 5px rgba(0,0,0,0.6)}
+    .btn{background:linear-gradient(135deg,#224466 0%,#0f243b 100%);border:1px solid #5a9bd4;padding:8px 20px;border-radius:60px;color:#f0fcff;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap;font-family:inherit}
+    .btn:active{transform:scale(0.95)}
+    .btn:disabled{opacity:0.5;cursor:not-allowed}
+    .active-player{background:linear-gradient(135deg,#ffaa00 0%,#ff6b00 100%);border-radius:60px;padding:12px 24px;text-align:center;font-weight:700;font-size:1.2rem;color:#1a1a00;margin-bottom:18px;box-shadow:0 0 30px rgba(255,170,0,0.6);animation:glow 1.5s infinite alternate;width:fit-content}
+    @keyframes glow{0%{box-shadow:0 0 20px rgba(255,170,0,0.4)}100%{box-shadow:0 0 40px rgba(255,170,0,0.8)}}
+    .players-panel{background:rgba(7,16,28,0.55);backdrop-filter:blur(16px);border-radius:65px;padding:22px 28px;margin-top:18px;border:1px solid rgba(90,160,235,0.3);width:100%;max-width:1200px}
+    .players-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px;margin-bottom:18px}
+    .players-list{display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start}
+    .p-card{background:#0b1a2d;border-radius:40px;padding:6px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:2px solid transparent;transition:all 0.2s}
+    .p-card.act{border-color:#ffaa00!important;box-shadow:0 0 20px rgba(255,170,0,0.6)!important;background:#1a2d44!important}
+    .p-name{background:#12273e;border:1px solid #4a8bc5;border-radius:30px;padding:4px 10px;color:#e2f0ff;width:100px;text-align:center;font-weight:500;font-size:0.85rem}
+    .p-btns{display:flex;gap:6px;align-items:center}
+    .p-btns button{border:none;border-radius:30px;padding:2px 14px;font-size:1rem;font-weight:bold;color:white;cursor:pointer}
+    .minus{background:#7a4a30}.plus{background:#2d8c64}
+    .p-score{font-size:1rem;font-weight:700;background:#16304a;padding:2px 12px;border-radius:40px;color:#ffecb0;min-width:60px;text-align:center}
+    .p-rem{background:none;border:none;font-size:1.2rem;cursor:pointer;color:#b0cae5;padding:0 4px}
+    .overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;z-index:1000}
+    .modal{background:#0c1a2c;max-width:550px;width:90%;border-radius:70px;padding:30px;text-align:center;border-top:4px solid #e3b87c;box-shadow:0 20px 40px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto}
+    .papyrus{background:linear-gradient(135deg,#f4e4c1 0%,#e8d5a3 30%,#d4b896 70%,#c9a87c 100%);color:#2c1810;max-width:550px;width:90%;border-radius:12px;padding:0;text-align:center;box-shadow:0 25px 50px rgba(0,0,0,0.7);border:8px solid #8b5a2b;overflow:hidden}
+    .pap-head{background:#5c3a1e;color:#f4e4c1;padding:16px;font-size:1.3rem;font-weight:bold;border-bottom:3px solid #3d2210}
+    .pap-body{padding:20px 24px;font-size:1rem;line-height:1.5;max-height:50vh;overflow-y:auto}
+    .pap-story{font-style:italic;margin-bottom:16px;color:#3d2210;font-size:0.95rem}
+    .pap-result{font-weight:bold;font-size:1.2rem;padding:10px;border-radius:8px;margin:12px 0}
+    .pap-result.bad{background:#ffebee;color:#b71c1c;border:2px solid #d32f2f}
+    .pap-result.good{background:#e8f5e9;color:#1b5e20;border:2px solid #388e3c}
+    .pap-btn{background:#5c3a1e;color:#f4e4c1;border:none;padding:12px 30px;border-radius:30px;font-weight:bold;cursor:pointer;margin:16px 0 24px;font-size:1rem}
+    .q-card{max-width:800px;width:90%;background:#0b1b30;border-radius:60px;padding:35px;text-align:center;border:2px solid #ffaa44}
+    .q-card h3{color:#ffda99;margin-bottom:20px;font-size:1.5rem}
+    .q-card p{font-size:1.35rem;margin-bottom:25px;color:#eaf3ff;line-height:1.4}
+    .answers{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:25px 0}
+    @media(max-width:500px){.answers{grid-template-columns:1fr}}
+    .ans{background:#1a334e;border:1px solid #5c96cc;border-radius:50px;padding:14px 18px;cursor:pointer;color:#eaf3ff;font-size:1rem;font-weight:500;transition:all 0.2s;text-align:center}
+    .ans:hover{background:#244b6e}
+    .ans.good{background:#2d8c64!important;border-color:#5cdb8b!important}
+    .ans.bad{background:#8b3a3a!important;border-color:#db5c5c!important}
+    .lt{width:100%;border-collapse:collapse;margin:20px 0}
+    .lt th{background:#1a334e;color:#ffda99;padding:12px;border-radius:20px 20px 0 0}
+    .lt td{background:#0b1a2d;padding:15px;text-align:center;color:#eaf3ff;border-bottom:1px solid #2d6088}
+    .lt .win{background:#2d4a1e!important;color:#ffd700!important;font-weight:700}
+    .status-message{text-align:center;background:rgba(0,0,0,0.5);border-radius:40px;padding:6px 16px;font-size:0.85rem;color:#cce4ff;margin-top:8px;width:fit-content;margin-left:auto;margin-right:auto}
+    .firework{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:5rem;animation:boom 1s ease-out forwards;pointer-events:none;z-index:2000}
+    @keyframes boom{0%{opacity:1;transform:translate(-50%,-50%) scale(0.5)}100%{opacity:0;transform:translate(-50%,-50%) scale(3)}}
+  </style>
+</head>
+<body>
+<div class="game-container">
+  <div class="active-player" id="ap">👑 Ход: Игрок 1</div>
+  <div class="main-flex">
+    <div class="wheel-area">
+      <div class="wheel-wrapper">
+        <div class="pointer"></div>
+        <div id="wheelRotator"><canvas id="wc" width="700" height="700"></canvas></div>
+      </div>
+      <button class="btn" id="rulesBtn">📘 Правила</button>
+    </div>
+    <div class="word-panel">
+      <div class="word-title" id="wt">🌟 ПОСЛОВИЦА 1/2</div>
+      <div id="grid" class="letter-grid"></div>
+      <div class="guess-area">
+        <input id="inp" placeholder="Буква или слово целиком" autocomplete="off">
+        <button class="btn" id="gBtn">Назвать</button>
+      </div>
+      <div id="wm" class="status-message">✨ Крути барабан!</div>
+    </div>
+  </div>
+  <div class="players-panel">
+    <div class="players-header">
+      <span style="font-weight:600;color:#c3dcff;font-size:1.25rem">👥 Игроки</span>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn" id="addP" style="background:#1e4a70">+ Добавить</button>
+        <button class="btn" id="lbBtn" style="background:linear-gradient(135deg,#c9a03d,#8b6914);border-color:#ffd700;color:#1a1a00">🏆 Результаты</button>
+      </div>
+    </div>
+    <div id="plist" class="players-list"></div>
+  </div>
+</div>
+
+<script>
+(()=>{
+  const $=id=>document.getElementById(id);
+  const cv=$('wc'),ctx=cv.getContext('2d'),wr=$('wheelRotator');
+
+  const PROV = [
+    {t:"ПОСПЕШИШЬ ЛЮДЕЙ НАСМЕШИШЬ", h:"Торопливость часто приводит к нелепым результатам", reward:150, diff:"легкая"},
+    {t:"ВСЯК СВЕРЧОК ЗНАЙ СВОЙ ШЕСТОК", h:"Каждый должен заниматься своим делом и знать своё место", reward:300, diff:"сложная"}
+  ];
+
+  // ================= РАСШИРЕННЫЙ БАНК ВОПРОСОВ (26 УНИКАЛЬНЫХ, БЕЗ УДАЛЁННЫХ) =================
+  const MASTER_QUESTIONS = [
+    {q:"Какая командная роль по Белбину включается быстрее всего в ситуации неопределённости и дефицита времени?", a:"Мотиватор", diff:25},
+    {q:"Кто из ролей склонен к излишнему перфекционизму и доводит проект до идеала, но может затянуть сроки?", a:"Доводчик", diff:20},
+    {q:"Какая роль помогает команде избежать группового мышления и задаёт неудобные, но важные вопросы?", a:"Аналитик", diff:25},
+    {q:"Кто в коллективе чаще всего становится неформальным лидером благодаря умению слушать и справедливо делегировать?", a:"Координатор", diff:20},
+    {q:"Кто генерирует прорывные идеи, но может быть невнимателен к деталям и терять интерес к рутине?", a:"Генератор идей", diff:15},
+    {q:"Кто лучше всего находит внешние ресурсы, выстраивает контакты и «сканирует» внешнюю среду?", a:"Исследователь ресурсов", diff:20},
+    {q:"Какая роль является «клеем» команды, сглаживает конфликты и поддерживает моральный дух?", a:"Душа команды", diff:15},
+    {q:"Кто обладает уникальными экспертными знаниями, но может быть узконаправлен и не видеть общую картину?", a:"Специалист", diff:20},
+    {q:"Какая роль наиболее эффективна в условиях жёстких дедлайнов и кризисов, заряжая команду энергией?", a:"Мотиватор", diff:25},
+    {q:"Кто из ролей Белбина обычно берёт на себя ответственность за превращение идей в конкретные практические действия?", a:"Реализатор", diff:15},
+    {q:"Согласно методике Белбина, что такое командная роль?", a:"Устойчивый паттерн поведения в рабочих ситуациях", diff:25},
+    {q:"Какая роль чаще всего «выключается» первой в условиях стресса, теряя способность к генерации?", a:"Генератор идей", diff:20},
+    {q:"Какая роль критична на старте проекта для поиска возможностей и партнёров?", a:"Исследователь ресурсов", diff:15},
+    {q:"Кто из ролей склонен к излишнему оптимизму и может недооценивать риски?", a:"Мотиватор", diff:20},
+    {q:"Какая роль лучше всего развита у людей с высоким социальным интеллектом?", a:"Координатор", diff:15},
+    {q:"Кто в команде следит за сроками и регламентами, превращая хаос в порядок?", a:"Реализатор", diff:15},
+    {q:"Какая роль чаще всего выступает медиатором в спорах между Аналитиком и Мотиватором?", a:"Координатор", diff:25},
+    {q:"Что, согласно Белбину, является главной ценностью методики?", a:"Ответ на вопрос «кто я» и понимание влияния поведения на результат", diff:30},
+    {q:"Как называется группа ролей, отвечающих за генерацию и анализ идей?", a:"Интеллектуальные роли", diff:20},
+    {q:"К какой группе ролей относятся Реализатор, Доводчик и Мотиватор?", a:"Роли действия", diff:20},
+    {q:"Кто из ролей может случайно подавить творчество других, слишком жёстко структурируя процесс?", a:"Реализатор", diff:25},
+    {q:"Какая роль чаще всего страдает от «синдрома отличника» и боится сдать работу с малейшим недостатком?", a:"Доводчик", diff:20},
+    {q:"Кто первым замечает внешнюю угрозу или новую возможность для команды?", a:"Исследователь ресурсов", diff:15},
+    {q:"Что, согласно теории, образуют ваши 2-3 самые сильные командные роли?", a:"Ядро ролей", diff:30},
+    {q:"Можно ли осознанно развить у себя те роли, которые не входят в ваше ядро?", a:"Да", diff:15},
+    {q:"Какая роль наиболее уязвима для критики и может выпадать из процесса при жёсткой обратной связи?", a:"Душа команды", diff:20},
+    {q:"Кто в команде Белбина отвечает за финальную вычитку и безупречное качество перед сдачей?", a:"Доводчик", diff:15},
+    {q:"Какая роль чаще всего не замечает деталей, потому что смотрит на картину целиком?", a:"Генератор идей", diff:20},
+    {q:"Как называется устойчивый паттерн поведения, который вы неосознанно включаете в рабочих ситуациях?", a:"Командная роль", diff:25}
+  ];
+
+  // Перемешиваем массив вопросов при старте, чтобы не повторялись в одной игре
+  let availableQuestions = [...MASTER_QUESTIONS];
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  availableQuestions = shuffleArray([...MASTER_QUESTIONS]);
+  let questionIndex = 0;
+
+  function getNextQuestion() {
+    if (questionIndex >= availableQuestions.length) {
+      // Если вдруг вопросы кончились — перемешиваем заново
+      availableQuestions = shuffleArray([...MASTER_QUESTIONS]);
+      questionIndex = 0;
+    }
+    const q = availableQuestions[questionIndex];
+    questionIndex++;
+    return q;
+  }
+
+  // Пулы ответов для вопросов с вариантами
+  const ROLE_NAMES = ["Мотиватор","Реализатор","Аналитик","Координатор","Генератор идей","Исследователь ресурсов","Душа команды","Специалист","Доводчик"];
+  const CONCEPT_ANSWERS = ["Устойчивый паттерн поведения в рабочих ситуациях","Ядро ролей","Интеллектуальные роли","Роли действия","Да","Командная роль","Ответ на вопрос «кто я» и понимание влияния поведения на результат"];
+
+  function getOptionsForQuestion(correctAnswer) {
+    let pool = [...ROLE_NAMES];
+    if (CONCEPT_ANSWERS.includes(correctAnswer)) pool = [...CONCEPT_ANSWERS];
+    let opts = [correctAnswer];
+    const others = pool.filter(o => o !== correctAnswer);
+    while(opts.length < 4) {
+      const cand = others[Math.floor(Math.random() * others.length)];
+      if(!opts.includes(cand)) opts.push(cand);
+    }
+    return opts.sort(() => Math.random() - 0.5);
+  }
+
+  // Призы и штрафы (игровые, связанные с ведущим)
+  const GOOD_EVENTS = [
+    {ti:"Золотая буква", st:"Ведущий в хорошем настроении и дарит вам подсказку! Вы можете открыть любую букву в слове.", rs:"+20 баллов + право открыть любую букву", v:20, freeLetter:true},
+    {ti:"Щедрость ведущего", st:"Ведущий поражён вашей эрудицией и добавляет бонусные баллы.", rs:"+25 баллов", v:25},
+    {ti:"Секретный конверт", st:"В конверте от ведущего оказалась дополнительная награда.", rs:"+20 баллов", v:20},
+    {ti:"Удача", st:"Барабан остановился на самом выгодном секторе. Ведущий аплодирует.", rs:"+15 баллов", v:15},
+    {ti:"Комплимент от ведущего", st:"Ваша игра впечатлила ведущего, он дарит вам дополнительные очки.", rs:"+20 баллов", v:20}
+  ];
+
+  const BAD_EVENTS = [
+    {ti:"Ошибка в слове", st:"Вы назвали неверную фамилию ведущего, и ведущий снимает баллы за поспешность.", rs:"-15 баллов", v:-15},
+    {ti:"Гнев ведущего", st:"Вы перебили ведущего. Он недоволен и штрафует вас.", rs:"-15 баллов", v:-15},
+    {ti:"Пропуск хода", st:"Барабан указал на штрафной сектор. Ведущий забирает часть очков.", rs:"-20 баллов", v:-20},
+    {ti:"Неудачная шутка", st:"Ваша шутка не понравилась ведущему. Он вычитает баллы.", rs:"-10 баллов", v:-10},
+    {ti:"Сектор 'Пусто'", st:"На секторе ничего нет. Ведущий пожимает плечами.", rs:"-0 баллов (ход не засчитывается)", v:0, skipTurn:true}
+  ];
+
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  // Сектора барабана
+  let secs = [];
+  function buildUniqueSectors() {
+    const sectors = [];
+    for(let i=0;i<5;i++) sectors.push({t:"q",c:"#2C4C6C",lb:"15",v:15});
+    for(let i=0;i<6;i++) sectors.push({t:"q",c:"#3A5A7C",lb:"20",v:20});
+    for(let i=0;i<4;i++) sectors.push({t:"q",c:"#4A6A8C",lb:"25",v:25});
+    for(let i=0;i<5;i++) sectors.push({t:"good",c:"#C9A03D",lb:"🎁"});
+    for(let i=0;i<5;i++) sectors.push({t:"bad",c:"#2F2A2A",lb:"⚠️"});
+    return sectors.sort(() => Math.random() - 0.5);
+  }
+
+  let deg=0, spinning=false, handling=false, pending=null, turnActive=false, aid=null;
+  let pidx=0, rev=[], wdone=false;
+  let players = [{id:1,name:"Игрок 1",pts:0}], nextId=2, currentPlayer=0, bonus=null;
+  let currentQuestionValue = 0;
+
+  function drawWheel() {
+    const n = secs.length;
+    if(!n) return;
+    const angleStep = (Math.PI * 2) / n;
+    const r = 330, cx=350, cy=350;
+    ctx.clearRect(0,0,700,700);
+    const off = -Math.PI/2;
+    for(let i=0;i<n;i++) {
+      const a0 = off + i*angleStep;
+      const a1 = off + (i+1)*angleStep;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,a0,a1);
+      ctx.fillStyle = secs[i].c;
+      ctx.fill();
+      ctx.strokeStyle = "#e0c47a";
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      const mid = a0 + angleStep/2;
+      const tr = r * 0.88;
+      ctx.save();
+      ctx.translate(cx + Math.cos(mid)*tr, cy + Math.sin(mid)*tr);
+      ctx.rotate(mid + Math.PI/2);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 26px 'Segoe UI'";
+      ctx.fillStyle = "#F0F9FF";
+      ctx.fillText(secs[i].lb, 0, 0);
+      ctx.restore();
+    }
+    ctx.beginPath();
+    for(let i=0;i<5;i++) {
+      const angle = Math.PI*1.5 + i*Math.PI*2/5;
+      const x1 = cx + Math.cos(angle)*44;
+      const y1 = cy + Math.sin(angle)*44;
+      const x2 = cx + Math.cos(angle+Math.PI/5)*18;
+      const y2 = cy + Math.sin(angle+Math.PI/5)*18;
+      if(i===0) ctx.moveTo(x1,y1);
+      else ctx.lineTo(x1,y1);
+      ctx.lineTo(x2,y2);
+    }
+    ctx.closePath();
+    ctx.fillStyle = "#FFF0B5";
+    ctx.fill();
+    ctx.strokeStyle = "#DAA520";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
+
+  function getCurrentSector() {
+    if(!secs.length) return null;
+    const step = 360 / secs.length;
+    let d = ((deg % 360) + 360) % 360;
+    let pointerAngle = (360 - d) % 360;
+    for(let i=0;i<secs.length;i++) {
+      if(pointerAngle >= i*step && pointerAngle < (i+1)*step) return secs[i];
+    }
+    return secs[0];
+  }
+
+  function removeSector(s) {
+    const idx = secs.indexOf(s);
+    if(idx > -1) {
+      secs.splice(idx,1);
+      drawWheel();
+      if(secs.length === 0) finishGame();
+    }
+    pending = null;
+  }
+
+  function finishGame() {
+    if(aid) cancelAnimationFrame(aid);
+    spinning = false;
+    handling = false;
+    turnActive = false;
+    for(let i=0;i<16;i++) {
+      setTimeout(() => {
+        const fw = document.createElement('div');
+        fw.className = 'firework';
+        fw.textContent = ['🎆','✨','🎇','🌟','💥','🏆'][Math.floor(Math.random()*6)];
+        document.body.appendChild(fw);
+        setTimeout(() => fw.remove(), 1000);
+      }, i*120);
+    }
+    setTimeout(() => showLeaderboard(true), 900);
+  }
+
+  function endTurnAndSwitch() {
+    if(turnActive) turnActive = false;
+    handling = false;
+    spinning = false;
+    if(aid) { cancelAnimationFrame(aid); aid = null; }
+    nextPlayer();
+  }
+
+  function nextPlayer() {
+    if(!players.length) return;
+    currentPlayer = (currentPlayer + 1) % players.length;
+    turnActive = false;
+    handling = false;
+    updateUI();
+  }
+
+  function spin() {
+    if(spinning || handling || turnActive || pending) return;
+    if(!secs.length) {
+      secs = buildUniqueSectors();
+      deg = 0;
+      wr.style.transform = 'rotate(0deg)';
+      drawWheel();
+    }
+    spinning = true;
+    turnActive = true;
+    const extra = 1080 + Math.random() * 1440;
+    const start = deg;
+    const target = start + extra;
+    const duration = 4000;
+    const startTime = performance.now();
+    function animate(now) {
+      const p = Math.min((now - startTime)/duration, 1);
+      deg = start + extra * (1 - Math.pow(1-p, 3));
+      wr.style.transform = `rotate(${deg}deg)`;
+      if(p < 1) {
+        aid = requestAnimationFrame(animate);
+      } else {
+        deg = target % 360;
+        wr.style.transform = `rotate(${deg}deg)`;
+        aid = null;
+        const sector = getCurrentSector();
+        if(!sector) { endTurnAndSwitch(); return; }
+        pending = sector;
+        if(sector.t === "good") {
+          const ev = pick(GOOD_EVENTS);
+          showEventPopup(ev, true, sector);
+        } else if(sector.t === "bad") {
+          const ev = pick(BAD_EVENTS);
+          showEventPopup(ev, false, sector);
+        } else {
+          currentQuestionValue = sector.v;
+          const q = getNextQuestion();  // Берём следующий уникальный вопрос
+          showQuestionModal({text: q.q, correct: q.a, options: getOptionsForQuestion(q.a)}, sector);
+        }
+        spinning = false;
+      }
+    }
+    if(aid) cancelAnimationFrame(aid);
+    aid = requestAnimationFrame(animate);
+  }
+
+  function showEventPopup(ev, isGood, sector) {
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+      <div class="papyrus">
+        <div class="pap-head">${isGood ? '🎁 ПРИЗ ОТ ВЕДУЩЕГО 🎁' : '⚠️ ШТРАФНОЙ СЕКТОР ⚠️'}</div>
+        <div class="pap-body">
+          <h3 style="color:#3d2210;margin-bottom:12px">${ev.ti}</h3>
+          <p class="pap-story">${ev.st}</p>
+          <div class="pap-result ${isGood ? 'good' : 'bad'}">${ev.rs}</div>
+          <button class="pap-btn" id="closeEventBtn">${isGood ? 'Забрать приз' : (ev.skipTurn ? 'Ход пропущен' : 'Продолжить')}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#closeEventBtn').onclick = () => {
+      if(isGood) {
+        if(players[currentPlayer]) players[currentPlayer].pts += ev.v;
+        renderPlayers();
+        bonus = {active: true, value: ev.v};
+        if(ev.freeLetter) {
+          setTimeout(() => {
+            const letter = prompt("✨ Вы можете открыть любую букву! Введите букву (русскую):", "").toUpperCase();
+            if(letter && /[А-ЯЁ]/.test(letter)) tryLetter(letter);
+          }, 100);
+        }
+      } else {
+        if(ev.v !== 0 && players[currentPlayer]) players[currentPlayer].pts = Math.max(0, players[currentPlayer].pts + ev.v);
+        renderPlayers();
+        bonus = null;
+        if(ev.skipTurn) {
+          removeSector(sector);
+          overlay.remove();
+          handling = false;
+          endTurnAndSwitch();
+          return;
+        }
+      }
+      removeSector(sector);
+      overlay.remove();
+      if(isGood) {
+        handling = false;
+        document.getElementById('inp').focus();
+      } else {
+        handling = false;
+        endTurnAndSwitch();
+      }
+    };
+  }
+
+  function showQuestionModal(qo, sector) {
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+      <div class="q-card">
+        <h3>❓ ВОПРОС ПО МЕТОДИКЕ БЕЛБИНА НА ${currentQuestionValue} БАЛЛОВ</h3>
+        <p>${qo.text}</p>
+        <div class="answers" id="answersContainer"></div>
+        <p id="feedbackMsg" style="color:#ffda99;min-height:24px;margin-top:10px"></p>
+        <button class="btn" id="continueBtn" style="display:none">Продолжить</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    const answersDiv = overlay.querySelector('#answersContainer');
+    const feedback = overlay.querySelector('#feedbackMsg');
+    const contBtn = overlay.querySelector('#continueBtn');
+    let answered = false;
+    qo.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'ans';
+      btn.textContent = `${String.fromCharCode(65+idx)}. ${opt}`;
+      btn.onclick = () => {
+        if(answered) return;
+        answered = true;
+        const isCorrect = (opt === qo.correct);
+        Array.from(answersDiv.children).forEach((b, i) => {
+          b.disabled = true;
+          if(qo.options[i] === qo.correct) b.classList.add('good');
+          else if(i === idx && !isCorrect) b.classList.add('bad');
+        });
+        if(isCorrect) {
+          feedback.textContent = `✅ Верно! +${currentQuestionValue} баллов. Теперь назовите букву!`;
+          if(players[currentPlayer]) players[currentPlayer].pts += currentQuestionValue;
+          renderPlayers();
+          bonus = {active: true, value: currentQuestionValue};
+        } else {
+          feedback.textContent = `❌ Ошибка! Правильный ответ: "${qo.correct}". Ход переходит.`;
+          bonus = null;
+        }
+        contBtn.style.display = 'inline-block';
+      };
+      answersDiv.appendChild(btn);
+    });
+    contBtn.onclick = () => {
+      removeSector(sector);
+      overlay.remove();
+      if(bonus && bonus.active) {
+        handling = false;
+        document.getElementById('inp').focus();
+      } else {
+        handling = false;
+        endTurnAndSwitch();
+      }
+    };
+  }
+
+  // --- Игровая логика с буквами и пословицами ---
+  function loadProverb(index) {
+    const raw = PROV[index].t;
+    const letters = raw.split('');
+    rev = letters.map(ch => ch === ' ');
+    wdone = false;
+    const icon = PROV[index].diff === "легкая" ? "🌟" : "🔥";
+    document.getElementById('wt').innerHTML = `${icon} ПОСЛОВИЦА ${index+1}/2 · ${PROV[index].reward} баллов`;
+    renderWordGrid(letters);
+    document.getElementById('wm').innerHTML = `💡 ${PROV[index].h}`;
+  }
+
+  function renderWordGrid(arr) {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    arr.forEach((ch, i) => {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      if(ch === ' ') tile.classList.add('spc');
+      else if(rev[i]) {
+        tile.classList.add('rev');
+        tile.textContent = ch;
+      } else tile.classList.add('hid');
+      grid.appendChild(tile);
+    });
+  }
+
+  function tryLetter(letter) {
+    if(wdone) return advanceProverb();
+    const upper = letter.toUpperCase();
+    if(!/[А-ЯЁ]/.test(upper)) {
+      document.getElementById('wm').innerHTML = "Только русские буквы!";
+      return false;
+    }
+    let found = false;
+    const word = PROV[pidx].t.split('');
+    word.forEach((ch, i) => {
+      if(!rev[i] && ch === upper) {
+        rev[i] = true;
+        found = true;
+      }
+    });
+    if(found) {
+      renderWordGrid(word);
+      if(rev.every((v,i) => v || word[i] === ' ')) {
+        wdone = true;
+        showVictoryModal(PROV[pidx].reward);
+      } else {
+        document.getElementById('wm').innerHTML = `✅ Буква "${upper}" открыта!`;
+      }
+    } else {
+      document.getElementById('wm').innerHTML = `❌ Буквы "${upper}" нет в слове.`;
+    }
+    return found;
+  }
+
+  function tryFullWord(guess) {
+    if(wdone) return false;
+    if(guess.toUpperCase().trim() === PROV[pidx].t) {
+      rev = PROV[pidx].t.split('').map(() => true);
+      renderWordGrid(PROV[pidx].t.split(''));
+      wdone = true;
+      showVictoryModal(PROV[pidx].reward);
+      return true;
+    }
+    document.getElementById('wm').innerHTML = "❌ Неверное слово!";
+    return false;
+  }
+
+  function showVictoryModal(reward) {
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+      <div class="modal">
+        <div style="font-size:4rem">🏆</div>
+        <div style="background:#fff9e6;color:#1f1a10;padding:18px;border-radius:40px;margin:15px 0;font-weight:bold">ПОСЛОВИЦА ОТГАДАНА!<br>+${reward} баллов</div>
+        <p style="color:#ffda99">Кто отгадал?</p>
+        <div id="winnerSelect"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    players.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'btn';
+      btn.style.cssText = 'display:block;width:100%;margin:5px 0;background:#1a334e';
+      btn.textContent = `🏆 ${p.name} — +${reward} баллов`;
+      btn.onclick = () => {
+        p.pts += reward;
+        renderPlayers();
+        document.getElementById('wm').innerHTML = `🎉 ${p.name} получает +${reward} баллов!`;
+        overlay.remove();
+        setTimeout(() => {
+          advanceProverb();
+          resetTurnState();
+        }, 1000);
+      };
+      overlay.querySelector('#winnerSelect').appendChild(btn);
+    });
+  }
+
+  function advanceProverb() {
+    if(pidx < PROV.length-1) {
+      pidx++;
+      loadProverb(pidx);
+    } else {
+      document.getElementById('wm').innerHTML = "🏆 Все пословицы разгаданы! Поздравляем!";
+      finishGame();
+    }
+  }
+
+  function resetTurnState() {
+    spinning = false;
+    handling = false;
+    turnActive = false;
+    pending = null;
+    bonus = null;
+    if(aid) { cancelAnimationFrame(aid); aid = null; }
+  }
+
+  function updateUI() {
+    if(!players.length) {
+      document.getElementById('ap').innerHTML = '👑 Нет игроков';
+      return;
+    }
+    document.getElementById('ap').innerHTML = `👑 Ход: ${players[currentPlayer].name} (${players[currentPlayer].pts} баллов)`;
+    document.querySelectorAll('.p-card').forEach((card, idx) => card.classList.toggle('act', idx === currentPlayer));
+  }
+
+  function renderPlayers() {
+    const container = document.getElementById('plist');
+    if(!players.length) {
+      container.innerHTML = '<div style="padding:10px">Добавьте участников</div>';
+      return;
+    }
+    container.innerHTML = '';
+    players.forEach((p, idx) => {
+      const card = document.createElement('div');
+      card.className = 'p-card';
+      if(idx === currentPlayer) card.classList.add('act');
+      card.innerHTML = `
+        <input class="p-name" value="${p.name}" data-id="${p.id}">
+        <div class="p-btns">
+          <button class="minus" data-id="${p.id}">–</button>
+          <span class="p-score">${p.pts}</span>
+          <button class="plus" data-id="${p.id}">+</button>
+        </div>
+        <button class="p-rem" data-id="${p.id}">✖</button>
+      `;
+      container.appendChild(card);
+    });
+    document.querySelectorAll('.minus').forEach(btn => btn.onclick = () => changePoints(parseInt(btn.dataset.id), -1));
+    document.querySelectorAll('.plus').forEach(btn => btn.onclick = () => changePoints(parseInt(btn.dataset.id), 1));
+    document.querySelectorAll('.p-name').forEach(inp => inp.onchange = () => {
+      const p = players.find(x => x.id === parseInt(inp.dataset.id));
+      if(p && inp.value.trim()) p.name = inp.value.trim();
+      else if(p) inp.value = p.name;
+      updateUI();
+    });
+    document.querySelectorAll('.p-rem').forEach(btn => btn.onclick = () => {
+      players = players.filter(x => x.id !== parseInt(btn.dataset.id));
+      if(currentPlayer >= players.length) currentPlayer = 0;
+      if(!players.length) currentPlayer = -1;
+      else if(currentPlayer < 0) currentPlayer = 0;
+      renderPlayers();
+      updateUI();
+    });
+    updateUI();
+  }
+
+  function changePoints(id, delta) {
+    const p = players.find(x => x.id === id);
+    if(!p) return;
+    let change = delta;
+    if(bonus && bonus.active && currentPlayer === players.indexOf(p)) {
+      change = bonus.value;
+      bonus = null;
+    }
+    p.pts = Math.max(0, p.pts + change);
+    renderPlayers();
+    updateUI();
+  }
+
+  function showLeaderboard(isFinal = false) {
+    const sorted = [...players].sort((a,b) => b.pts - a.pts);
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:700px">
+        <h2 style="color:#ffda99">${isFinal ? '🎉 ИГРА ЗАВЕРШЕНА 🎉' : '🏆 ТАБЛИЦА ЛИДЕРОВ'}</h2>
+        <table class="lt">
+          <thead><tr><th>Место</th><th>Игрок</th><th>Баллы</th></tr></thead>
+          <tbody>
+            ${sorted.map((p,i) => `<tr class="${i===0 && p.pts>0 ? 'win' : ''}"><td>${i===0 && p.pts>0 ? '👑 ' : ''}${i+1}</td><td>${p.name}</td><td>${p.pts}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <button class="btn" id="closeLeaderboard">${isFinal ? 'Завершить игру' : 'Закрыть'}</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#closeLeaderboard').onclick = () => {
+      overlay.remove();
+      if(isFinal) location.reload();
+    };
+  }
+
+  // СТАРТ
+  secs = buildUniqueSectors();
+  drawWheel();
+  loadProverb(0);
+  renderPlayers();
+  updateUI();
+
+  cv.onclick = e => {
+    if(spinning || handling || turnActive) return;
+    const rect = cv.getBoundingClientRect();
+    const scale = cv.width / rect.width;
+    const x = (e.clientX - rect.left) * scale - 350;
+    const y = (e.clientY - rect.top) * scale - 350;
+    if(Math.hypot(x,y) <= 52) spin();
+  };
+  document.getElementById('addP').onclick = () => {
+    players.push({id: nextId++, name: `Игрок ${nextId-1}`, pts: 0});
+    renderPlayers();
+  };
+  document.getElementById('gBtn').onclick = () => {
+    const val = document.getElementById('inp').value.trim();
+    if(!val) return;
+    if(val.length === 1) tryLetter(val[0]);
+    else tryFullWord(val);
+    document.getElementById('inp').value = '';
+    if(!wdone && !(pending && pending.t==='good' && bonus)) endTurnAndSwitch();
+  };
+  document.getElementById('inp').onkeydown = e => { if(e.key === 'Enter') document.getElementById('gBtn').click(); };
+  document.getElementById('rulesBtn').onclick = () => {
+    const ov = document.createElement('div'); ov.className = 'overlay';
+    ov.innerHTML = `<div class="modal"><h2 style="color:#ffda99">📘 ПРАВИЛА</h2><p style="text-align:left;line-height:1.6">🎡 Крутите центр барабана.<br>🔢 Вопросы по методике Белбина +15-25 баллов (9 ролей, ядро, соц. интеллект).<br>🎁 Призы от ведущего +15-25 баллов.<br>⚠️ Штрафы от ведущего -10-20 баллов.<br>📖 Отгадайте пословицу (+150/300).<br>💬 Ввод: буква или слово целиком.<br>👥 1 ход = 1 попытка (плюс бонусные буквы).</p><button class="btn" id="cr">Понятно</button></div>`;
+    document.body.appendChild(ov); ov.querySelector('#cr').onclick = () => ov.remove();
+  };
+  document.getElementById('lbBtn').onclick = () => showLeaderboard(false);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мосты вместо стен • Конфликтология</title>
+    <style>
+        :root {
+            --blue: #2563eb; --green: #059669; --red: #dc2626; --yellow: #d97706; --pink: #db2777;
+            --dark: #0f172a; --gray: #64748b; --bg: #f1f5f9;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font); background: var(--bg); overflow: hidden; height: 100vh; color: var(--dark); }
+
+        .sl-tainer { width: 100vw; height: 100vh; position: relative; }
+        .slide {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s ease; z-index: 0;
+        }
+        .slide.active { opacity: 1; pointer-events: auto; z-index: 1; }
+
+        .bg-dark { background: #111; }
+        .bg-blue { background: #1e3a5f; }
+
+        .frosted {
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+        .frosted-dark {
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .glass-card {
+            background: rgba(255,255,255,0.18);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.35);
+            border-radius: 16px;
+            padding: 18px 22px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+        .white-block {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+        }
+
+        .full-photo { position: relative; width: 100%; height: 100%; }
+        .full-photo .bg-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .full-photo .overlay {
+            position: absolute; bottom: 0; left: 0; right: 0; padding: 60px 80px;
+            background: linear-gradient(transparent, rgba(15,23,42,0.7)); color: white;
+        }
+        .full-photo .overlay.top { top: 0; bottom: auto; background: transparent; }
+        .full-photo .overlay.light {
+            background: linear-gradient(transparent, rgba(255,255,255,0.85)); color: var(--dark);
+        }
+        .full-photo h1 { font-size: clamp(2rem, 5vw, 4rem); font-weight: 800; }
+        .full-photo h2 { font-size: clamp(1.5rem, 4vw, 3rem); font-weight: 700; }
+
+        .split-lr { display: flex; width: 100%; height: 100%; }
+        .split-lr .text-side {
+            width: 45%; display: flex; flex-direction: column; justify-content: center;
+            padding: clamp(20px, 5vw, 80px); gap: 16px;
+        }
+        .split-lr .photo-side { flex: 1; margin: 16px; border-radius: 24px; overflow: hidden; }
+        .split-lr .photo-side img { width: 100%; height: 100%; object-fit: cover; }
+        .split-lr .photo-side video { width: 100%; height: 100%; object-fit: cover; }
+
+        .center-all {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 100%; padding: 24px;
+        }
+        .center-all .inner { max-width: 800px; display: flex; flex-direction: column; gap: 20px; align-items: center; text-align: center; }
+        .center-all h2 { font-size: clamp(1.5rem, 4vw, 3rem); font-weight: 700; }
+        .big-number { font-size: clamp(3rem, 10vw, 8rem); font-weight: 900; line-height: 1; }
+
+        @keyframes shakeFade {
+            0% { transform: translateX(0); opacity: 1; } 10% { transform: translateX(-8px); } 20% { transform: translateX(8px); }
+            30% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 50% { transform: translateX(-2px); }
+            60% { transform: translateX(2px); } 70% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(0); opacity: 0.4; }
+        }
+        .shake-number { animation: shakeFade 2.2s ease-in-out infinite; display: inline-block; }
+
+        @keyframes gentleSway {
+            0%, 100% { transform: translateY(0); }
+            25% { transform: translateY(-8px); }
+            50% { transform: translateY(2px); }
+            75% { transform: translateY(-4px); }
+        }
+        .emoji-sway span {
+            display: inline-block;
+            animation: gentleSway 4s ease-in-out infinite;
+        }
+        .emoji-sway span:nth-child(1) { animation-delay: 0s; }
+        .emoji-sway span:nth-child(2) { animation-delay: 0.5s; }
+        .emoji-sway span:nth-child(3) { animation-delay: 1.0s; }
+        .emoji-sway span:nth-child(4) { animation-delay: 1.5s; }
+
+        .cards-row { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+        .case-view { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 24px; }
+        .case-box {
+            background: white; border-radius: 28px; padding: 36px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.05); max-width: 900px; width: 100%;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .case-row { display: flex; align-items: flex-start; gap: 14px; }
+        .case-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+        .case-icon.red { background: #fee2e2; } .case-icon.green { background: #dcfce7; }
+
+        .nav { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; z-index: 200; }
+        .nav-btn {
+            width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--blue);
+            color: #fff; font-size: 1.4rem; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+            display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+        }
+        .nav-btn:hover { background: #1d4ed8; }
+        .counter { position: fixed; top: 20px; right: 24px; background: white; padding: 8px 18px; border-radius: 24px; font-weight: 700; color: var(--blue); z-index: 200; font-size: 0.9rem; }
+        .text-lg { font-size: clamp(0.9rem, 1.5vw, 1.2rem); line-height: 1.6; }
+        .text-xl { font-size: clamp(1rem, 2vw, 1.5rem); line-height: 1.4; }
+        .text-2xl { font-size: clamp(1.2rem, 2.5vw, 2rem); line-height: 1.2; }
+        .font-bold { font-weight: 700; }
+        .tag { display: inline-block; padding: 5px 14px; border-radius: 20px; font-weight: 700; font-size: 0.8rem; }
+        .tag-red { background: #fee2e2; color: #991b1b; }
+        .tag-yellow { background: #fef3c7; color: #92400e; }
+        .photo-placeholder {
+            border: 2px dashed #cbd5e1; border-radius: 20px; background: rgba(255,255,255,0.5);
+            display: flex; align-items: center; justify-content: center; color: #94a3b8;
+            font-size: 0.9rem; text-align: center; width: 100%; height: 100%;
+        }
+
+        /* Карусель синтонов */
+        .carousel-container {
+            position: relative; width: 320px; height: 420px; margin: 0 auto;
+            perspective: 1000px;
+        }
+        .carousel-track {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 100%; position: relative;
+        }
+        .carousel-card {
+            position: absolute;
+            width: 240px; height: 340px;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 16px; padding: 24px;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            color: white; text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .carousel-card .card-emoji { font-size: 4rem; }
+        .carousel-card .card-title { font-size: 1.3rem; font-weight: 700; }
+        .carousel-card.active-card {
+            z-index: 3; transform: scale(1); opacity: 1;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+        .carousel-card.left-card {
+            z-index: 1; transform: translateX(-150px) rotateY(10deg) scale(0.8); opacity: 0.45;
+        }
+        .carousel-card.right-card {
+            z-index: 1; transform: translateX(150px) rotateY(-10deg) scale(0.8); opacity: 0.45;
+        }
+        .carousel-card.far-card { opacity: 0; pointer-events: none; }
+
+        .synton-hint {
+            color: #cbd5e1; font-size: 0.85rem; text-align: center;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .split-lr { flex-direction: column !important; }
+            .split-lr .text-side { width: 100%; padding: 20px; }
+            .split-lr .photo-side { height: 35vh; margin: 10px; }
+            .full-photo .overlay { padding: 30px 24px; }
+            .carousel-container { width: 280px; height: 380px; }
+            .carousel-card { width: 200px; height: 300px; }
+            .carousel-card.left-card { transform: translateX(-120px) rotateY(10deg) scale(0.8); }
+            .carousel-card.right-card { transform: translateX(120px) rotateY(-10deg) scale(0.8); }
+        }
+    </style>
+</head>
+<body>
+    <div class="sl-tainer">
+        <div class="counter"><span id="currentSlide">1</span> / 35</div>
+
+        <!-- 1: ТИТУЛ -->
+        <div class="slide active" id="slide1"><div class="full-photo"><img class="bg-img" src="1.png" alt="Мосты"><div class="overlay"><h1>Мосты вместо стен</h1><p class="text-xl">Управление конфликтами — навык будущего</p></div></div></div>
+
+        <!-- 2: 85% - цифра по центру -->
+        <div class="slide" id="slide2">
+            <div class="full-photo"><img class="bg-img" src="Fon.1.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner">
+                    <div class="frosted" style="padding:40px 60px;text-align:center;">
+                        <div class="big-number shake-number" style="color:var(--red);">85%</div>
+                        <p class="text-xl" style="color:var(--dark);margin-top:8px;">конфликтов на работе возникают из-за неумения слышать друг друга</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3: ЧТО ТАКОЕ -->
+        <div class="slide" id="slide3"><div class="full-photo"><img class="bg-img" src="4.png" alt="Диалог"><div class="overlay top" style="text-align:center;padding:40px;"><h2>Что такое конфликт?</h2><p class="text-lg">Столкновение целей, интересов или взглядов людей. Это нормально. Это сигнал. Это точка роста.</p></div></div></div>
+
+        <!-- 4: СТРУКТУРА - по центру, крупнее -->
+        <div class="slide" id="slide4">
+            <div class="full-photo"><img class="bg-img" src="Fon.1.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner">
+                    <h2>Структура конфликта</h2>
+                    <div class="cards-row">
+                        <div class="frosted" style="text-align:center;padding:28px 32px;min-width:180px;"><h3 style="font-size:1.4rem;">👥 Участники</h3></div>
+                        <div class="frosted" style="text-align:center;padding:28px 32px;min-width:180px;"><h3 style="font-size:1.4rem;">🎯 Предмет</h3></div>
+                        <div class="frosted" style="text-align:center;padding:28px 32px;min-width:180px;"><h3 style="font-size:1.4rem;">🧠 Восприятие</h3></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5: ЗВОНОЧКИ - 2×2 карточки -->
+        <div class="slide" id="slide5">
+            <div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner" style="gap:24px;">
+                    <h2 style="color:white;">Тревожные звоночки</h2>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;max-width:600px;">
+                        <div class="frosted-dark" style="text-align:center;padding:24px;"><span style="font-size:2rem;">🔹</span><p class="text-xl" style="color:white;">Молчание вместо диалога</p></div>
+                        <div class="frosted-dark" style="text-align:center;padding:24px;"><span style="font-size:2rem;">🔹</span><p class="text-xl" style="color:white;">Раздражение по мелочам</p></div>
+                        <div class="frosted-dark" style="text-align:center;padding:24px;"><span style="font-size:2rem;">🔹</span><p class="text-xl" style="color:white;">Слухи и жалобы</p></div>
+                        <div class="frosted-dark" style="text-align:center;padding:24px;"><span style="font-size:2rem;">🔹</span><p class="text-xl" style="color:white;">Пассивная агрессия</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6: ФОРМУЛА - по центру, КОНФЛИКТ ярче -->
+        <div class="slide" id="slide6">
+            <div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner">
+                    <div class="frosted-dark" style="text-align:center;padding:36px 48px;">
+                        <div class="text-2xl font-bold" style="display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;">
+                            <span class="tag tag-red" style="font-size:1.1rem;">ПРОБЛЕМА</span>
+                            <span style="color:white;">+</span>
+                            <span class="tag tag-yellow" style="font-size:1.1rem;">ЭМОЦИИ</span>
+                            <span style="color:white;">=</span>
+                            <span style="color:#ffffff;text-shadow:0 0 12px rgba(255,100,100,0.6);font-size:1.4rem;">КОНФЛИКТ</span>
+                        </div>
+                        <p class="text-lg" style="color:#cbd5e1;margin-top:12px;">Уберите эмоции — останется задача.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7: ВИДЫ - по центру -->
+        <div class="slide" id="slide7">
+            <div class="full-photo"><img class="bg-img" src="Fon.1.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner">
+                    <h2>Виды конфликтов</h2>
+                    <div class="cards-row" style="gap:16px;">
+                        <div class="frosted" style="text-align:center;padding:24px 28px;min-width:180px;"><h3>Внутриличностный</h3></div>
+                        <div class="frosted" style="text-align:center;padding:24px 28px;min-width:180px;"><h3>Межличностный</h3></div>
+                        <div class="frosted" style="text-align:center;padding:24px 28px;min-width:180px;"><h3>Межгрупповой</h3></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8: НЕ РЕШАЕМЫЕ - по центру, контрастный заголовок -->
+        <div class="slide" id="slide8">
+            <div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner">
+                    <div class="frosted-dark" style="text-align:center;padding:36px 48px;">
+                        <h2 style="color:#ffffff;text-shadow:0 0 8px rgba(255,255,255,0.4);">Некоторые конфликты не решаются</h2>
+                        <p class="text-xl" style="color:#e2e8f0;">Ценностный тупик. Ресурсный дефицит.</p>
+                        <p class="text-lg" style="color:#94e0b8;">Стратегия: не решить, а управлять.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9: ПЛЮСЫ/МИНУСЫ - фото 6, диагональ, углы -->
+        <div class="slide" id="slide9" style="position:relative;">
+            <div class="full-photo"><img class="bg-img" src="6.png" alt="Диагональ"></div>
+            <div style="position:absolute;top:15%;left:8%;" class="frosted" >
+                <h2 style="color:#065f46;">✅ Плюсы</h2>
+                <p class="text-lg" style="color:#064e3b;">Вскрывает проблемы<br>Стимулирует рост<br>Учит договариваться</p>
+            </div>
+            <div style="position:absolute;bottom:15%;right:8%;" class="frosted-dark">
+                <h2 style="color:#fca5a5;">❌ Минусы</h2>
+                <p class="text-lg" style="color:#fecaca;">Разрушает доверие<br>Вызывает стресс<br>Снижает продуктивность</p>
+            </div>
+        </div>
+
+        <!-- 10: КОНФЛИКТОГЕНЫ -->
+        <div class="slide" id="slide10"><div class="full-photo"><img class="bg-img" src="2.png" alt="Конфликтогены"><div class="overlay light"><h2>Конфликтогены</h2><p class="text-xl">Слова и действия, провоцирующие агрессию.</p></div></div></div>
+
+        <!-- 11: СВЫСОКА с видео pers.1 -->
+        <div class="slide bg-dark" id="slide11">
+            <div class="split-lr" style="flex-direction:row-reverse;">
+                <div class="text-side">
+                    <span class="tag tag-red">СВЫСОКА</span>
+                    <p class="text-xl mt-4" style="color:white;">«Ты вообще о чём думал?»</p>
+                    <p class="text-xl" style="color:#cbd5e1;">«Это же элементарно...»</p>
+                </div>
+                <div class="photo-side">
+                    <video id="vid11" muted playsinline loop
+                           style="width:100%;height:100%;object-fit:cover;display:block;">
+                        <source src="pers.1.mp4" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+        </div>
+
+        <!-- 12: В ЛОБ -->
+        <div class="slide bg-dark" id="slide12"><div class="split-lr" style="flex-direction:row-reverse;"><div class="text-side"><span class="tag tag-red">В ЛОБ</span><p class="text-xl mt-4" style="color:white;">«Ты меня бесишь!»</p><p class="text-xl" style="color:#cbd5e1;">«Это твоя вина!»</p></div><div class="photo-side"><div class="photo-placeholder" style="background:rgba(255,255,255,0.1);">🖼️ Персонаж 2</div></div></div></div>
+
+        <!-- 13: Я-ЦЕНТР -->
+        <div class="slide bg-dark" id="slide13"><div class="split-lr" style="flex-direction:row-reverse;"><div class="text-side"><span class="tag tag-yellow">Я-ЦЕНТР</span><p class="text-xl mt-4" style="color:white;">«Мне всё равно»</p><p class="text-xl" style="color:#cbd5e1;">Перебивание, опоздания</p></div><div class="photo-side"><div class="photo-placeholder" style="background:rgba(255,255,255,0.1);">🖼️ Персонаж 3</div></div></div></div>
+
+        <!-- 14: СТОП-СЛОВА - заголовок + диалоги с красными словами -->
+        <div class="slide" id="slide14">
+            <div class="full-photo"><img class="bg-img" src="Fon.1.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner" style="gap:24px;max-width:700px;">
+                    <h2 style="color:#831843;font-size:2.5rem;">Стоп-слова</h2>
+                    <div style="display:flex;flex-direction:column;gap:20px;width:100%;">
+                        <div style="display:flex;gap:16px;align-items:flex-start;">
+                            <div style="background:#fee2e2;border-radius:16px;padding:16px 20px;flex:1;position:relative;">
+                                <p class="text-lg" style="margin:0;">❌ «<span style="color:#dc2626;font-weight:700;text-decoration:line-through;">Ты всегда</span> опаздываешь!»</p>
+                            </div>
+                            <div style="color:#94a3b8;font-size:1.5rem;display:flex;align-items:center;">→</div>
+                            <div style="background:#dcfce7;border-radius:16px;padding:16px 20px;flex:1;">
+                                <p class="text-lg" style="margin:0;color:#065f46;">✅ «Я переживаю, когда задерживаешься»</p>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:16px;align-items:flex-start;">
+                            <div style="background:#fee2e2;border-radius:16px;padding:16px 20px;flex:1;">
+                                <p class="text-lg" style="margin:0;">❌ «<span style="color:#dc2626;font-weight:700;text-decoration:line-through;">Успокойся!</span>»</p>
+                            </div>
+                            <div style="color:#94a3b8;font-size:1.5rem;display:flex;align-items:center;">→</div>
+                            <div style="background:#dcfce7;border-radius:16px;padding:16px 20px;flex:1;">
+                                <p class="text-lg" style="margin:0;color:#065f46;">✅ «Я вижу, ты расстроен»</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 15: ЭСКАЛАЦИЯ - центр, плавное покачивание -->
+        <div class="slide" id="slide15">
+            <div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner">
+                    <h2 style="color:white;">Закон эскалации</h2>
+                    <div class="emoji-sway" style="font-size:clamp(2rem,5vw,3.5rem);">
+                        <span>😐</span> → <span>😠</span> → <span>😡</span> → <span>💥</span>
+                    </div>
+                    <div class="frosted-dark" style="text-align:center;padding:24px 36px;">
+                        <p class="text-xl" style="color:white;">На удар отвечаем более сильным ударом.</p>
+                        <p class="text-lg" style="color:#cbd5e1;">Разорвать цикл может синтон.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 16: МЯГКАЯ ТЕХНИКА -->
+        <div class="slide" id="slide16"><div class="split-lr"><div class="text-side"><h2>Мягкая техника</h2><p class="text-xl">💧 «Я слышу тебя»</p><p class="text-xl">💧 Признать часть правоты</p></div><div class="photo-side"><div class="photo-placeholder">🖼️ Фото 9</div></div></div></div>
+
+        <!-- 17: ЖЁСТКАЯ ТЕХНИКА -->
+        <div class="slide" id="slide17"><div class="split-lr"><div class="text-side"><h2>Жёсткая техника</h2><p class="text-xl">⚡ «Прекратите этот тон»</p><p class="text-xl">⚡ Чёткие последствия</p></div><div class="photo-side"><div class="photo-placeholder">🖼️ Фото 10</div></div></div></div>
+
+        <!-- 18: СИНТОНЫ - карусель карт -->
+        <div class="slide" id="slide18">
+            <div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;flex-direction:column;gap:12px;">
+                <h2 style="color:white;text-align:center;">Синтоны</h2>
+                <div class="carousel-container" id="syntonCarousel">
+                    <div class="carousel-track" id="syntonTrack"></div>
+                </div>
+                <p class="synton-hint">🖱️ Крутите колёсико или кликайте по боковым картам</p>
+            </div>
+        </div>
+
+        <!-- 19: Я-СООБЩЕНИЕ - белые блоки + объяснение -->
+        <div class="slide" id="slide19">
+            <div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner" style="max-width:750px;gap:20px;">
+                    <h2 style="color:white;">Я-сообщение vs Ты-сообщение</h2>
+                    <p class="text-lg" style="color:#cbd5e1;text-align:center;">
+                        «Ты-сообщение» обвиняет → вызывает защиту.<br>
+                        «Я-сообщение» выражает чувства → строит диалог.
+                    </p>
+                    <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
+                        <div class="white-block" style="flex:1;min-width:260px;border-left:5px solid #dc2626;">
+                            <p style="color:#dc2626;font-weight:700;margin:0;">❌ Ты-сообщение</p>
+                            <p class="text-2xl font-bold" style="color:#991b1b;margin:8px 0 0;">«Ты меня подвёл!»</p>
+                            <p style="color:#64748b;font-size:0.85rem;margin-top:6px;">Обвинение, нападение</p>
+                        </div>
+                        <div class="white-block" style="flex:1;min-width:260px;border-left:5px solid #059669;">
+                            <p style="color:#059669;font-weight:700;margin:0;">✅ Я-сообщение</p>
+                            <p class="text-2xl font-bold" style="color:#065f46;margin:8px 0 0;">«Я расстроен, что отчёт не готов»</p>
+                            <p style="color:#64748b;font-size:0.85rem;margin-top:6px;">Факт + эмоция без обвинения</p>
+                        </div>
+                    </div>
+                    <div class="frosted-dark" style="text-align:center;padding:16px 24px;">
+                        <p class="text-lg" style="color:white;margin:0;">Формула: <b>«Я чувствую... когда... потому что...»</b></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 20: ДА И - по центру -->
+        <div class="slide" id="slide20">
+            <div class="full-photo"><img class="bg-img" src="Fon.1.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner">
+                    <div class="frosted" style="text-align:center;padding:36px 48px;">
+                        <h2 style="color:#831843;">«Да... и»</h2>
+                        <p class="text-xl" style="color:#5b0e2d;">Вместо «Твой подход не сработает»</p>
+                        <p class="text-2xl font-bold" style="color:#065f46;">→ «Да, интересно, и мы дополним»</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 21: МАТРИЦА - без внешней подложки, 4 стеклянных блока -->
+        <div class="slide" id="slide21">
+            <div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner">
+                    <h2 style="color:white;">Матрица Томаса-Килманна</h2>
+                    <div style="display:grid;grid-template-columns:40px 1fr 1fr;grid-template-rows:1fr 1fr 30px;gap:12px;width:min(500px,80vw);height:min(280px,45vh);">
+                        <div style="writing-mode:vertical-lr;transform:rotate(180deg);grid-row:1/3;align-self:center;font-size:0.7rem;color:white;">Напористость</div>
+                        <div class="glass-card" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:white;">🦁 Конкуренция</div>
+                        <div class="glass-card" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:white;">🤝 Сотрудничество</div>
+                        <div class="glass-card" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:white;">🐢 Уклонение</div>
+                        <div class="glass-card" style="display:flex;align-items:center;justify-content:center;font-weight:700;color:white;">🕊️ Приспособление</div>
+                        <div></div>
+                        <div style="grid-column:2/4;text-align:center;font-size:0.7rem;color:white;">Кооперация →</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 22: ПРОФИЛАКТИКА - центр, расписано -->
+        <div class="slide" id="slide22">
+            <div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner">
+                    <h2 style="color:white;">Профилактика конфликтов</h2>
+                    <div class="cards-row" style="gap:20px;">
+                        <div class="frosted-dark" style="text-align:center;min-width:200px;padding:24px;">
+                            <h3 style="color:white;">🎯 Цели</h3>
+                            <p style="color:#cbd5e1;font-size:0.9rem;">Чёткие KPI исключают<br>разночтения</p>
+                        </div>
+                        <div class="frosted-dark" style="text-align:center;min-width:200px;padding:24px;">
+                            <h3 style="color:white;">🔄 Связь</h3>
+                            <p style="color:#cbd5e1;font-size:0.9rem;">Регулярные планёрки<br>и обратная связь</p>
+                        </div>
+                        <div class="frosted-dark" style="text-align:center;min-width:200px;padding:24px;">
+                            <h3 style="color:white;">🛡️ Безопасность</h3>
+                            <p style="color:#cbd5e1;font-size:0.9rem;">Право на ошибку<br>без страха</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 23: ЗОЛОТЫЕ ПРАВИЛА - центр, увеличен -->
+        <div class="slide" id="slide23">
+            <div class="full-photo"><img class="bg-img" src="Fon.1.png" alt="Фон"></div>
+            <div class="center-all" style="position:absolute;inset:0;">
+                <div class="inner" style="max-width:900px;">
+                    <h2>Золотые правила</h2>
+                    <div class="frosted" style="padding:32px 40px;width:100%;">
+                        <div style="display:flex;align-items:center;justify-content:center;gap:0;width:100%;flex-wrap:wrap;">
+                            <div style="flex:1;text-align:center;min-width:140px;position:relative;padding:8px;">
+                                <div style="width:56px;height:56px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;margin:0 auto 10px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">1</div>
+                                <p style="font-weight:600;">Прозрачные<br>инструкции</p>
+                            </div>
+                            <div style="flex:1;text-align:center;min-width:140px;position:relative;padding:8px;">
+                                <div style="width:56px;height:56px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;margin:0 auto 10px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">2</div>
+                                <p style="font-weight:600;">Регулярные<br>one-to-one</p>
+                            </div>
+                            <div style="flex:1;text-align:center;min-width:140px;position:relative;padding:8px;">
+                                <div style="width:56px;height:56px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;margin:0 auto 10px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">3</div>
+                                <p style="font-weight:600;">Эмоциональный<br>интеллект</p>
+                            </div>
+                            <div style="flex:1;text-align:center;min-width:140px;position:relative;padding:8px;">
+                                <div style="width:56px;height:56px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;margin:0 auto 10px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">4</div>
+                                <p style="font-weight:600;">Ноль терпимости<br>к токсичности</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 24-30: КЕЙСЫ -->
+        <div class="slide" id="slide24"><div class="case-view"><div class="case-box"><h2>Кейс 1: Сорванный дедлайн</h2><p class="text-lg"><b>Ситуация:</b> Дизайнер не сдал макет за час до презентации.</p><div class="case-row"><div class="case-icon red">❌</div><p class="text-lg"><b>Неверно:</b> «Ты подвёл команду!»</p></div><div class="case-row"><div class="case-icon green">✅</div><p class="text-lg"><b>Верно:</b> «Как мы выйдем из ситуации?»</p></div></div></div></div>
+        <div class="slide" id="slide25"><div class="case-view"><div class="case-box"><h2>Кейс 2: Конфликт отделов</h2><p class="text-lg"><b>Ситуация:</b> Продажи обещают то, что продукт не успевает.</p><div class="case-row"><div class="case-icon red">❌</div><p class="text-lg"><b>Неверно:</b> «Пусть сами делают!»</p></div><div class="case-row"><div class="case-icon green">✅</div><p class="text-lg"><b>Верно:</b> Встреча → регламент.</p></div></div></div></div>
+        <div class="slide" id="slide26"><div class="case-view"><div class="case-box"><h2>Кейс 3: Пассивная агрессия</h2><p class="text-lg"><b>Ситуация:</b> «Некоторым нравится всех задерживать...»</p><div class="case-row"><div class="case-icon red">❌</div><p class="text-lg"><b>Неверно:</b> Ответный сарказм.</p></div><div class="case-row"><div class="case-icon green">✅</div><p class="text-lg"><b>Верно:</b> «Обсудим конкретно.»</p></div></div></div></div>
+        <div class="slide" id="slide27"><div class="case-view"><div class="case-box"><h2>Кейс 4: Ценностный конфликт</h2><p class="text-lg"><b>Ситуация:</b> «Семья» vs «Контракт».</p><div class="case-row"><div class="case-icon red">❌</div><p class="text-lg"><b>Неверно:</b> Переубедить.</p></div><div class="case-row"><div class="case-icon green">✅</div><p class="text-lg"><b>Верно:</b> Признать разницу.</p></div></div></div></div>
+        <div class="slide" id="slide28"><div class="case-view"><div class="case-box"><h2>Кейс 5: Публичная критика</h2><p class="text-lg"><b>Ситуация:</b> Руководитель отчитывает при всех.</p><div class="case-row"><div class="case-icon red">❌</div><p class="text-lg"><b>Неверно:</b> Оправдания.</p></div><div class="case-row"><div class="case-icon green">✅</div><p class="text-lg"><b>Верно:</b> «Обсудим наедине.»</p></div></div></div></div>
+        <div class="slide" id="slide29"><div class="case-view"><div class="case-box"><h2>Кейс 6: Хронический конфликт</h2><p class="text-lg"><b>Ситуация:</b> Двое конфликтуют полгода.</p><div class="case-row"><div class="case-icon red">❌</div><p class="text-lg"><b>Неверно:</b> «Разберитесь сами.»</p></div><div class="case-row"><div class="case-icon green">✅</div><p class="text-lg"><b>Верно:</b> Медиация, KPI.</p></div></div></div></div>
+        <div class="slide" id="slide30"><div class="case-view"><div class="case-box"><h2>Кейс 7: Обратная связь</h2><p class="text-lg"><b>Ситуация:</b> Фидбек воспринимается как оскорбление.</p><div class="case-row"><div class="case-icon red">❌</div><p class="text-lg"><b>Неверно:</b> «С тобой невозможно!»</p></div><div class="case-row"><div class="case-icon green">✅</div><p class="text-lg"><b>Верно:</b> «Это про работу.»</p></div></div></div></div>
+
+        <!-- 31: ИТОГ -->
+        <div class="slide" id="slide31"><div class="full-photo"><img class="bg-img" src="Fon.1.png" alt="Фон"><div class="center-all" style="position:absolute;inset:0;"><div class="inner"><h2>Итог</h2><div class="cards-row"><div class="frosted"><h3>🧠 Теория</h3></div><div class="frosted"><h3>🛠️ Инструменты</h3></div><div class="frosted"><h3>📋 Практика</h3></div></div></div></div></div></div>
+
+        <!-- 32: ЧТО СДЕЛАТЬ ЗАВТРА -->
+        <div class="slide" id="slide32"><div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"><div class="center-all" style="position:absolute;inset:0;"><div class="inner"><h2 style="color:white;">Что сделать завтра</h2><div style="text-align:left;"><p class="text-xl" style="color:white;">✅ Заменить «Ты» на «Я»</p><p class="text-xl" style="color:white;">✅ Не ответить на конфликтоген</p><p class="text-xl" style="color:white;">✅ Провести one-to-one</p><p class="text-xl" style="color:white;">✅ Дать обратную связь</p></div></div></div></div></div>
+
+        <!-- 33: ЛИТЕРАТУРА -->
+        <div class="slide" id="slide33"><div class="full-photo"><img class="bg-img" src="Fon.1.png" alt="Фон"><div class="center-all" style="position:absolute;inset:0;"><div class="inner"><h2>Литература</h2><div class="cards-row"><div class="frosted"><h3>📚 Гоулман</h3></div><div class="frosted"><h3>📚 Фишер, Юри</h3></div><div class="frosted"><h3>📚 Литвак</h3></div></div></div></div></div></div>
+
+        <!-- 34: МОСТ -->
+        <div class="slide" id="slide34"><div class="full-photo"><img class="bg-img" src="Fon.2.png" alt="Фон"><div class="center-all" style="position:absolute;inset:0;"><div class="inner"><div class="big-number" style="color:var(--blue);">МОСТ</div><p class="text-2xl font-bold" style="color:white;">Не выиграть битву, а построить мост.</p></div></div></div></div>
+
+        <!-- 35: СПАСИБО -->
+        <div class="slide" id="slide35"><div class="full-photo"><img class="bg-img" src="3.png" alt="Мост"><div class="overlay" style="text-align:center;"><h2>Стройте мосты, а не стены</h2><p class="text-xl">Спасибо за внимание!</p></div></div></div>
+
+        <!-- НАВИГАЦИЯ -->
+        <div class="nav">
+            <button class="nav-btn" id="btnPrev">‹</button>
+            <button class="nav-btn" id="btnNext">›</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== НАВИГАЦИЯ СЛАЙДОВ =====
+        let current = 1;
+        const total = 35;
+
+        function showSlide(n) {
+            // Убираем active со всех слайдов
+            document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+            const slide = document.getElementById('slide' + n);
+            if (slide) {
+                slide.classList.add('active');
+                document.getElementById('currentSlide').textContent = n;
+            }
+            current = n;
+
+            // Если перешли на слайд 11 — запускаем видео
+            if (n === 11) {
+                const vid = document.getElementById('vid11');
+                if (vid) {
+                    vid.currentTime = 0;
+                    vid.play().catch(() => {});
+                }
+            }
+            // Если ушли со слайда 11 — пауза
+            if (n !== 11) {
+                const vid = document.getElementById('vid11');
+                if (vid) {
+                    vid.pause();
+                }
+            }
+        }
+
+        function nextSlide() {
+            if (current < total) showSlide(current + 1);
+        }
+        function prevSlide() {
+            if (current > 1) showSlide(current - 1);
+        }
+
+        // Кнопки навигации
+        document.getElementById('btnNext').addEventListener('click', nextSlide);
+        document.getElementById('btnPrev').addEventListener('click', prevSlide);
+
+        // Клавиши: стрелки и пробел
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                nextSlide();
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevSlide();
+            }
+        });
+
+        // ===== КАРУСЕЛЬ СИНТОНОВ (слайд 18) =====
+        const syntons = [
+            { emoji: '🙂', title: 'Улыбка' },
+            { emoji: '👂', title: 'Слушание' },
+            { emoji: '💬', title: 'Я-сообщения' },
+            { emoji: '🙌', title: 'Признание' },
+            { emoji: '⏰', title: 'Пунктуальность' },
+            { emoji: '👍', title: 'Одобрение' }
+        ];
+        let syntonIndex = 0;
+        const track = document.getElementById('syntonTrack');
+
+        function renderSyntonCards() {
+            if (!track) return;
+            track.innerHTML = '';
+            const totalS = syntons.length;
+            for (let i = 0; i < totalS; i++) {
+                const card = document.createElement('div');
+                card.className = 'carousel-card';
+                let diff = i - syntonIndex;
+                if (diff < -Math.floor(totalS / 2)) diff += totalS;
+                if (diff > Math.floor(totalS / 2)) diff -= totalS;
+
+                if (diff === 0) card.classList.add('active-card');
+                else if (diff === -1 || diff === totalS - 1) card.classList.add('left-card');
+                else if (diff === 1 || diff === -(totalS - 1)) card.classList.add('right-card');
+                else card.classList.add('far-card');
+
+                card.innerHTML = `<div class="card-emoji">${syntons[i].emoji}</div><div class="card-title">${syntons[i].title}</div>`;
+                card.addEventListener('click', () => { syntonIndex = i; renderSyntonCards(); });
+                track.appendChild(card);
+            }
+        }
+
+        function nextSynton() { syntonIndex = (syntonIndex + 1) % syntons.length; renderSyntonCards(); }
+        function prevSynton() { syntonIndex = (syntonIndex - 1 + syntons.length) % syntons.length; renderSyntonCards(); }
+
+        renderSyntonCards();
+
+        // Колёсико мыши листает синтоны ТОЛЬКО на слайде 18
+        document.addEventListener('wheel', e => {
+            if (current === 18) {
+                e.preventDefault();
+                if (e.deltaY > 0) nextSynton(); else prevSynton();
+            }
+        }, { passive: false });
+
+        // Свайпы для мобильных на слайде 18
+        let touchStartX = 0;
+        document.addEventListener('touchstart', e => {
+            if (current === 18) touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        document.addEventListener('touchend', e => {
+            if (current === 18) {
+                const diff = e.changedTouches[0].screenX - touchStartX;
+                if (Math.abs(diff) > 40) {
+                    if (diff < 0) nextSynton(); else prevSynton();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
